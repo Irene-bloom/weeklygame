@@ -276,7 +276,7 @@ export default function Home() {
                 </div>
               )}
 
-              <div className="mt-3 rounded-2xl bg-card2 p-2 ring-1 ring-line">
+              <div className="mt-3 rounded-2xl bg-white p-2 shadow-soft ring-1 ring-line">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -285,7 +285,7 @@ export default function Home() {
                   }}
                   placeholder="写下这一周……（Ctrl/⌘ + Enter 发送）"
                   rows={2}
-                  className="w-full resize-none bg-transparent px-2 py-1 text-sm text-ink outline-none placeholder:text-sub"
+                  className="w-full resize-none bg-transparent px-2 py-1 text-[15px] font-medium text-ink outline-none placeholder:font-normal placeholder:text-sub"
                   disabled={phase === "settling"}
                 />
                 <div className="flex items-center justify-between px-1">
