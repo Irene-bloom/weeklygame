@@ -47,18 +47,18 @@ export function RadarChart({
           key={idx}
           points={pts}
           fill="none"
-          stroke="#3a3354"
+          stroke="#e0d6c6"
           strokeWidth={1}
-          opacity={0.6}
+          opacity={0.9}
         />
       ))}
       {/* 轴线 */}
       {ATTR_KEYS.map((_, i) => {
         const [x, y] = pointAt(i, radius);
-        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#3a3354" strokeWidth={1} opacity={0.6} />;
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e0d6c6" strokeWidth={1} opacity={0.9} />;
       })}
       {/* 数据区 */}
-      <polygon points={dataPts} fill="rgba(167,139,250,0.35)" stroke="#a78bfa" strokeWidth={2} />
+      <polygon points={dataPts} fill="rgba(167,139,250,0.28)" stroke="#a78bfa" strokeWidth={2} />
       {/* 顶点圆点 */}
       {ATTR_KEYS.map((k, i) => {
         const v = valueOf(levelFromExp(attrs[k]).level);
@@ -77,7 +77,7 @@ export function RadarChart({
             textAnchor="middle"
             dominantBaseline="middle"
             fontSize={12}
-            fill="#ece9f5"
+            fill="#3a2f2a"
           >
             {ATTR_META[k].emoji}{ATTR_META[k].label}
             <tspan fill={ATTR_META[k].color} fontSize={11}> Lv.{lvl}</tspan>

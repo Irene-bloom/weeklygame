@@ -24,6 +24,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [streaming, setStreaming] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false); // 手机端：角色面板默认折叠
   const [settleResult, setSettleResult] = useState<{
     summary: string;
     highlights: string[];
@@ -34,26 +35,22 @@ export default function Home() {
   const [newBadges, setNewBadges] = useState<BadgeDef[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 载入本地状态
   useEffect(() => {
     setState(loadState());
     setMounted(true);
   }, []);
 
-  // 自动滚到底
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, streaming]);
 
   const weekLabel = isoWeekLabel(new Date());
 
-  // 开始本周复盘：发一条开场，让 AI 先开口
   async function startReview() {
     setPhase("chatting");
     setMessages([]);
     setSettleResult(null);
     setNewBadges([]);
-    // 用一条系统式的引导触发 AI 开场
     await sendToAI([
       {
         role: "user",
@@ -63,7 +60,6 @@ export default function Home() {
     ]);
   }
 
-  // 调用 AI 对话（流式）
   async function sendToAI(history: ChatMessage[]) {
     setStreaming(true);
     setMessages([...history, { role: "assistant", content: "" }]);
@@ -98,7 +94,6 @@ export default function Home() {
     }
   }
 
-  // 玩家发言
   async function handleSend() {
     if ((!input.trim() && pendingImages.length === 0) || streaming) return;
     const userMsg: ChatMessage = {
@@ -112,27 +107,22 @@ export default function Home() {
     await sendToAI(newHistory);
   }
 
-  // 处理图片上传 → base64
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        setPendingImages((prev) => [...prev, reader.result as string]);
-      };
+      reader.onload = () => setPendingImages((prev) => [...prev, reader.result as string]);
       reader.readAsDataURL(file);
     });
     e.target.value = "";
   }
 
-  // 语音输入（Web Speech API）
   const [listening, setListening] = useState(false);
   function startVoice() {
-    const SR =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
-      alert("你的浏览器不支持语音输入，建议用 Chrome。");
+      alert("你的浏览器不支持语音输入，建议用 Chrome / Edge。");
       return;
     }
     const rec = new SR();
@@ -148,7 +138,6 @@ export default function Home() {
     rec.start();
   }
 
-  // 结束复盘 → 结算
   async function settle() {
     const convo = messages.filter((m) => m.content !== "" && !m.content.startsWith("（系统"));
     if (convo.length < 2) {
@@ -170,8 +159,6 @@ export default function Home() {
       }
       const result = await res.json();
       setSettleResult(result);
-
-      // 落库
       const entry: ReviewEntry = {
         id: `${weekLabel}-${Date.now()}`,
         weekLabel,
@@ -202,43 +189,57 @@ export default function Home() {
   }
 
   if (!mounted) {
-    return <div className="flex min-h-screen items-center justify-center text-muted">载入中…</div>;
+    return <div className="flex min-h-screen items-center justify-center text-sub">载入中…</div>;
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6">
+    <main className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
       {/* 顶部标题 */}
-      <header className="mb-6 flex items-end justify-between">
+      <header className="mb-4 flex items-end justify-between sm:mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            周目 <span className="text-sm font-normal text-muted">· 人生周复盘</span>
+          <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            周目 <span className="text-xs font-normal text-sub sm:text-sm">· 人生周复盘</span>
           </h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-xs text-sub sm:text-sm">
             每一周，都是人生的一个周目 · 本周 {weekLabel}
           </p>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
-        {/* 左：角色面板（进度 Progress） */}
-        <aside className="rounded-3xl bg-panel/40 p-4">
+      {/* 手机端：角色面板折叠开关 */}
+      <button
+        onClick={() => setPanelOpen((o) => !o)}
+        className="mb-3 flex w-full items-center justify-between rounded-2xl bg-card px-4 py-3 text-sm shadow-soft lg:hidden"
+      >
+        <span className="font-semibold text-ink">📊 我的角色面板</span>
+        <span className="text-sub">{panelOpen ? "收起 ▲" : "展开 ▼"}</span>
+      </button>
+
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[320px_1fr]">
+        {/* 左：角色面板（进度 Progress）—— 手机端可折叠 */}
+        <aside
+          className={`rounded-3xl bg-card p-4 shadow-card ${panelOpen ? "block" : "hidden"} lg:block`}
+        >
           <CharacterPanel state={state} />
         </aside>
 
         {/* 中：存档点对话区 + 资料投喂 */}
-        <section className="flex flex-col rounded-3xl bg-panel/40 p-4" style={{ minHeight: "70vh" }}>
+        <section
+          className="flex flex-col rounded-3xl bg-card p-4 shadow-card"
+          style={{ minHeight: "min(70vh, 600px)" }}
+        >
           {phase === "idle" && (
-            <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <div className="flex flex-1 flex-col items-center justify-center px-2 py-10 text-center">
               <div className="mb-4 text-6xl">🛟</div>
-              <h2 className="mb-2 text-xl font-bold">存档点 · Savepoint</h2>
-              <p className="mb-6 max-w-md text-sm text-muted">
-                坐到存档点，和你的 AI 向导聊聊这一周。<br />
-                可以把成功日记、和朋友的聊天、周末的照片喂给它，<br />
+              <h2 className="mb-2 text-xl font-bold text-ink">存档点 · Savepoint</h2>
+              <p className="mb-6 max-w-md text-sm leading-relaxed text-sub">
+                坐到存档点，和你的 AI 向导聊聊这一周。
+                可以把成功日记、和朋友的聊天、周末的照片喂给它，
                 它会陪你复盘，并把这一周沉淀成你的成长。
               </p>
               <button
                 onClick={startReview}
-                className="rounded-full bg-gradient-to-r from-accent to-accent2 px-8 py-3 font-bold text-ink transition hover:opacity-90"
+                className="rounded-full bg-gradient-to-r from-accent to-accent2 px-8 py-3 font-bold text-white shadow-soft transition hover:opacity-90 active:scale-95"
               >
                 开始本周复盘
               </button>
@@ -247,27 +248,26 @@ export default function Home() {
 
           {(phase === "chatting" || phase === "settling") && (
             <>
-              <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto pr-1">
+              <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto pr-1 sm:space-y-4">
                 {messages
                   .filter((m) => !m.content.startsWith("（系统") || m.role === "assistant")
                   .map((m, i) => (
                     <MessageBubble key={i} msg={m} />
                   ))}
                 {streaming && messages[messages.length - 1]?.content === "" && (
-                  <div className="text-sm text-muted">向导正在思考…</div>
+                  <div className="text-sm text-sub">向导正在思考…</div>
                 )}
               </div>
 
-              {/* 待发送的图片预览 */}
               {pendingImages.length > 0 && (
                 <div className="mt-2 flex gap-2 overflow-x-auto">
                   {pendingImages.map((img, i) => (
-                    <div key={i} className="relative">
+                    <div key={i} className="relative shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={img} alt="" className="h-16 w-16 rounded-lg object-cover" />
                       <button
                         onClick={() => setPendingImages((p) => p.filter((_, idx) => idx !== i))}
-                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-xs"
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-xs text-white"
                       >
                         ×
                       </button>
@@ -276,8 +276,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* 输入区 */}
-              <div className="mt-3 rounded-2xl bg-ink/60 p-2">
+              <div className="mt-3 rounded-2xl bg-card2 p-2 ring-1 ring-line">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -286,18 +285,18 @@ export default function Home() {
                   }}
                   placeholder="写下这一周……（Ctrl/⌘ + Enter 发送）"
                   rows={2}
-                  className="w-full resize-none bg-transparent px-2 py-1 text-sm outline-none placeholder:text-muted"
+                  className="w-full resize-none bg-transparent px-2 py-1 text-sm text-ink outline-none placeholder:text-sub"
                   disabled={phase === "settling"}
                 />
                 <div className="flex items-center justify-between px-1">
-                  <div className="flex items-center gap-2 text-muted">
-                    <label className="cursor-pointer rounded-lg px-2 py-1 text-sm hover:bg-panel/60" title="上传图片">
+                  <div className="flex items-center gap-1 text-sub">
+                    <label className="cursor-pointer rounded-lg px-2 py-1.5 text-base hover:bg-line/60" title="上传图片">
                       📷
                       <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
                     </label>
                     <button
                       onClick={startVoice}
-                      className={`rounded-lg px-2 py-1 text-sm hover:bg-panel/60 ${listening ? "text-accent2" : ""}`}
+                      className={`rounded-lg px-2 py-1.5 text-base hover:bg-line/60 ${listening ? "text-accent2" : ""}`}
                       title="语音输入"
                     >
                       {listening ? "🔴 听着呢…" : "🎤"}
@@ -307,14 +306,14 @@ export default function Home() {
                     <button
                       onClick={settle}
                       disabled={phase === "settling" || streaming}
-                      className="rounded-full bg-gold/20 px-4 py-1.5 text-sm text-gold ring-1 ring-gold/40 transition hover:bg-gold/30 disabled:opacity-40"
+                      className="rounded-full bg-gold/15 px-3 py-1.5 text-xs font-medium text-gold ring-1 ring-gold/40 transition hover:bg-gold/25 disabled:opacity-40 sm:px-4 sm:text-sm"
                     >
                       {phase === "settling" ? "结算中…" : "结束并结算 💎"}
                     </button>
                     <button
                       onClick={handleSend}
                       disabled={streaming || phase === "settling"}
-                      className="rounded-full bg-accent px-5 py-1.5 text-sm font-bold text-ink transition hover:opacity-90 disabled:opacity-40"
+                      className="rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-40 sm:px-5"
                     >
                       发送
                     </button>
@@ -325,16 +324,12 @@ export default function Home() {
           )}
 
           {phase === "settled" && settleResult && (
-            <SettleResult
-              result={settleResult}
-              newBadges={newBadges}
-              onDone={resetToIdle}
-            />
+            <SettleResult result={settleResult} newBadges={newBadges} onDone={resetToIdle} />
           )}
         </section>
       </div>
 
-      <footer className="mt-8 text-center text-xs text-muted">
+      <footer className="mt-6 text-center text-xs text-sub sm:mt-8">
         周目 · 数据只存在你自己的浏览器里 · {weekLabel}
       </footer>
     </main>
@@ -346,11 +341,11 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-          isUser ? "bg-accent/20" : "bg-panel/80"
+        className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed sm:max-w-[80%] ${
+          isUser ? "bg-accent/15 text-ink" : "bg-card2 text-ink ring-1 ring-line"
         }`}
       >
-        {!isUser && <div className="mb-1 text-xs text-accent2">向导</div>}
+        {!isUser && <div className="mb-1 text-xs font-semibold text-accent2">向导</div>}
         {msg.images && msg.images.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
             {msg.images.map((img, i) => (
@@ -390,17 +385,16 @@ function SettleResult({
   return (
     <div className="flex flex-1 flex-col items-center overflow-y-auto py-4 text-center">
       <div className="mb-2 text-5xl animate-pop">💎</div>
-      <h2 className="mb-1 text-xl font-bold">本周结算</h2>
-      <p className="mb-6 max-w-md text-sm text-accent2">"{result.summary}"</p>
+      <h2 className="mb-1 text-xl font-bold text-ink">本周结算</h2>
+      <p className="mb-6 max-w-md text-sm text-accent2">&ldquo;{result.summary}&rdquo;</p>
 
-      {/* 经验掉落 */}
       <div className="mb-6 w-full max-w-md">
-        <div className="mb-2 text-xs text-muted">属性成长</div>
+        <div className="mb-2 text-xs text-sub">属性成长</div>
         <div className="grid grid-cols-5 gap-2">
           {Object.entries(result.attrDelta).map(([k, v]) => (
-            <div key={k} className="rounded-xl bg-panel/60 px-1 py-2">
-              <div className="text-[11px]">{attrLabels[k]}</div>
-              <div className={`text-sm font-bold ${v > 0 ? "text-accent" : "text-muted"}`}>
+            <div key={k} className="rounded-xl bg-card2 px-1 py-2 shadow-soft">
+              <div className="text-[11px] text-ink">{attrLabels[k]}</div>
+              <div className={`text-sm font-bold ${v > 0 ? "text-accent" : "text-sub"}`}>
                 {v > 0 ? `+${v}` : "0"}
               </div>
             </div>
@@ -408,13 +402,12 @@ function SettleResult({
         </div>
       </div>
 
-      {/* 高光卡 */}
       {result.highlights.length > 0 && (
         <div className="mb-4 w-full max-w-md text-left">
-          <div className="mb-2 text-xs text-muted">✨ 高光卡</div>
+          <div className="mb-2 text-xs text-sub">✨ 高光卡</div>
           <div className="space-y-2">
             {result.highlights.map((h, i) => (
-              <div key={i} className="rounded-xl bg-gold/10 px-3 py-2 text-sm ring-1 ring-gold/30">
+              <div key={i} className="rounded-xl bg-gold/10 px-3 py-2 text-sm text-ink ring-1 ring-gold/30">
                 {h}
               </div>
             ))}
@@ -422,13 +415,12 @@ function SettleResult({
         </div>
       )}
 
-      {/* 教训卡 */}
       {result.lessons.length > 0 && (
         <div className="mb-4 w-full max-w-md text-left">
-          <div className="mb-2 text-xs text-muted">📜 教训卡</div>
+          <div className="mb-2 text-xs text-sub">📜 教训卡</div>
           <div className="space-y-2">
             {result.lessons.map((l, i) => (
-              <div key={i} className="rounded-xl bg-accent/10 px-3 py-2 text-sm ring-1 ring-accent/30">
+              <div key={i} className="rounded-xl bg-accent/10 px-3 py-2 text-sm text-ink ring-1 ring-accent/30">
                 {l}
               </div>
             ))}
@@ -436,17 +428,16 @@ function SettleResult({
         </div>
       )}
 
-      {/* 新徽章 */}
       {newBadges.length > 0 && (
         <div className="mb-4 w-full max-w-md">
-          <div className="mb-2 text-xs text-muted">🏅 解锁新徽章</div>
+          <div className="mb-2 text-xs text-sub">🏅 解锁新徽章</div>
           <div className="flex flex-wrap justify-center gap-3">
             {newBadges.map((b) => (
               <div key={b.id} className="flex flex-col items-center animate-pop">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gold/20 text-2xl ring-1 ring-gold/50">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gold/15 text-2xl ring-1 ring-gold/50">
                   {b.emoji}
                 </div>
-                <div className="mt-1 text-xs">{b.name}</div>
+                <div className="mt-1 text-xs text-ink">{b.name}</div>
               </div>
             ))}
           </div>
@@ -455,7 +446,7 @@ function SettleResult({
 
       <button
         onClick={onDone}
-        className="mt-4 rounded-full bg-gradient-to-r from-accent to-accent2 px-8 py-2.5 font-bold text-ink transition hover:opacity-90"
+        className="mt-4 rounded-full bg-gradient-to-r from-accent to-accent2 px-8 py-2.5 font-bold text-white shadow-soft transition hover:opacity-90 active:scale-95"
       >
         完成 · 回到存档点
       </button>

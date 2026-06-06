@@ -3,13 +3,14 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html,
 body {
-  background: radial-gradient(1200px 800px at 20% -10%, #2a2342 0%, #1a1625 55%, #141021 100%);
-  color: #ece9f5;
+  background: radial-gradient(1200px 800px at 50% -10%, #fbf6ec 0%, #f4f1ea 45%, #efe9dd 100%);
+  background-attachment: fixed;
+  color: #3a2f2a;
   min-height: 100%;
 }
 
@@ -22,7 +23,7 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3a3354;
+  background: #e0d6c6;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-track {
@@ -30,7 +31,7 @@ body {
 }
 
 .card-glow {
-  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.15), 0 8px 40px -12px rgba(167, 139, 250, 0.35);
+  box-shadow: 0 2px 16px -4px rgba(120, 100, 80, 0.15);
 }
 
 @keyframes pop {
