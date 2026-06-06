@@ -26,6 +26,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# licaigame 是独立项目，有自己的 git 仓库（licaigame.git），不纳入 weeklygame
+/licaigame/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 本地运行日志
+dev.log

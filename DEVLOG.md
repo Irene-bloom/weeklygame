@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-06-06 · #002 首页界面 + AI 接口跑通
+
+**改了什么**
+- 写好首页 `app/page.tsx`：左侧角色面板（进度 Progress）+ 中间存档点对话区（Savepoint）+ 结算掉落（战利品 Loot）三大模块串成完整交互。
+- 组件：`components/RadarChart.tsx`（纯 SVG 五维雷达图，零依赖）、`components/CharacterPanel.tsx`（雷达图 + Streak 统计 + 季度 Boss 血条 + 15 个徽章墙）。
+- 两个 API 路由：
+  - `app/api/chat/route.ts`：AI 向导对话，流式输出（`claude-opus-4-8` + adaptive thinking），注入长期记忆，支持图片多模态。
+  - `app/api/settle/route.ts`：复盘结算，用 JSON Schema 结构化输出（summary / attrDelta / highlights / lessons / memories）。
+- 资料投喂：文本输入、图片上传（转 base64）、语音输入（Web Speech API）。
+- 本地 `npm install`（129 包）+ `npm run dev` 跑通，首页 HTTP 200，渲染正常。
+
+**为什么**
+- 让产品从"一堆代码"变成"打开浏览器能看能用"。先把周复盘一个闭环跑通，验证体验。
+- 雷达图用纯 SVG 自己画而非引第三方图表库 → 包体更小、Vercel 部署更快、完全可控。
+- 结算用结构化输出而非自己解析文本 → 保证返回的经验值/卡片一定可解析，不会因为模型多说一句话就崩。
+
+**结论**
+- 界面与 AI 接口跑通（AI 对话待用户配置 ANTHROPIC_API_KEY 后可用）。
+- 下一步（用户反馈）：① 配色从深色改为「温暖米白风」；② 全面响应式，适配手机端。
+
+---
+
 ## 2026-06-06 · #001 项目骨架 + 世界观确定
 
 **改了什么**
