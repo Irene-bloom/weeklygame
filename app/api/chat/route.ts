@@ -11,10 +11,16 @@ interface IncomingMessage {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  // 支持两种 key 名：ANTHROPIC_API_KEY（官方）或 ZHIPU_API_KEY（智谱）
+  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.ZHIPU_API_KEY;
+  // 智谱兼容接口地址；不配则走 Anthropic 官方
+  const baseURL = process.env.AI_BASE_URL || undefined;
+  // 模型名：智谱用 glm-4.6，官方用 claude-opus-4-8
+  const model = process.env.AI_MODEL || "claude-opus-4-8";
+
   if (!apiKey) {
     return new Response(
-      JSON.stringify({ error: "未配置 ANTHROPIC_API_KEY。请在 .env.local 或 Vercel 环境变量里设置。" }),
+      JSON.stringify({ error: "未配置 API key。请在 .env.local 设置 ZHIPU_API_KEY（智谱）或 ANTHROPIC_API_KEY。" }),
       { status: 500, headers: { "content-type": "application/json" } }
     );
   }
@@ -27,7 +33,7 @@ export async function POST(req: Request) {
   }
 
   const { messages, memories = [], weekLabel = "" } = body;
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey, baseURL });
 
   // 把长期记忆注入到 system（让向导"记得"过去）
   let system = GUIDE_SYSTEM_PROMPT;
@@ -60,9 +66,8 @@ export async function POST(req: Request) {
 
   try {
     const stream = client.messages.stream({
-      model: "claude-opus-4-8",
+      model,
       max_tokens: 1024,
-      thinking: { type: "adaptive" },
       system,
       messages: apiMessages,
     });

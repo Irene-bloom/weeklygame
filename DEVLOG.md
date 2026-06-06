@@ -4,6 +4,26 @@
 
 ---
 
+## 2026-06-06 · #003 接入智谱 GLM（Anthropic 兼容接口）
+
+**改了什么**
+- 把 `app/api/chat` 和 `app/api/settle` 改成可配置：通过环境变量 `AI_BASE_URL` + `AI_MODEL` + `ZHIPU_API_KEY`（或 `ANTHROPIC_API_KEY`）切换厂商/模型，不写死。
+- 智谱用 Anthropic 兼容接口 `https://open.bigmodel.cn/api/anthropic`，默认模型 `glm-4.6`。
+- `settle` 路由去掉 `output_config` 结构化输出（智谱兼容接口不支持），改为提示词要求输出 JSON + 健壮解析（去 markdown 围栏、截取首尾大括号），保证拿得到结果。
+- `chat` 路由去掉 adaptive thinking（智谱不支持）。
+- 更新 `.env.example`，新增 `.env.local`（base_url/model 预填，key 留占位，且 .env.local 已被 .gitignore 忽略，不会进库）。
+
+**为什么**
+- 用户用智谱的 key，而非 Anthropic 官方。智谱提供 Anthropic 兼容接口 → 只需让 SDK 指向智谱地址 + 换模型名，几乎不改业务逻辑。
+- 做成环境变量可配置 → 以后换模型、换回官方、或换别的兼容厂商，改一行配置即可，不动代码。
+- ⚠️ 安全：key 只存本地 `.env.local`，绝不写进任何提交的文件，避免泄露进 git 历史。
+
+**结论**
+- 代码已支持智谱。用户只需在 `.env.local` 填入（新的）智谱 key 并重启 dev server，AI 向导即可对话。
+- 提醒用户：之前在对话里贴出的 key 应作废重置。
+
+---
+
 ## 2026-06-06 · #002 首页界面 + AI 接口跑通
 
 **改了什么**
